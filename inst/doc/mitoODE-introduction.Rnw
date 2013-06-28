@@ -1,0 +1,356 @@
+%\VignetteIndexEntry{mitoODE}
+%\VignetteKeywords{ExperimentData, siRNAData}
+%\VignettePackage{mitoODE}
+
+\documentclass[10pt,a4paper]{article}
+
+\RequirePackage{amsfonts,amsmath,amstext,amssymb,amscd}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{color}
+\definecolor{darkblue}{rgb}{0.2,0.0,0.4}
+
+\usepackage[a4paper,left=2.2cm,top=2.2cm,bottom=2.8cm,right=2.2cm,ignoreheadfoot]{geometry}
+
+\newcommand{\lib}[1]{{\mbox{\normalfont\textsf{#1}}}}
+\newcommand{\file}[1]{{\mbox{\normalfont\textsf{'#1'}}}}
+\newcommand{\R}{{\mbox{\normalfont\textsf{R}}}}
+\newcommand{\Rfunction}[1]{{\mbox{\normalfont\texttt{#1}}}}
+\newcommand{\Robject}[1]{{\mbox{\normalfont\texttt{#1}}}}
+\newcommand{\Rpackage}[1]{{\mbox{\normalfont\textsf{#1}}}}
+\newcommand{\Rclass}[1]{{\mbox{\normalfont\textit{#1}}}}
+\newcommand{\code}[1]{{\mbox{\normalfont\texttt{#1}}}}
+
+\newcommand{\email}[1]{\mbox{\href{mailto:#1}{\textcolor{darkblue}{\normalfont{#1}}}}}
+\newcommand{\web}[2]{\mbox{\href{#2}{\textcolor{darkblue}{\normalfont{#1}}}}}
+
+%\usepackage[pdftitle={{mitoODE: Dynamical modelling of phenotypes in a genome-wide RNAi live-cell imaging assay},pdfauthor={Gregoire Pau},pdfsubject={mitoODE},pdfkeywords={image processing},pagebackref,bookmarks,colorlinks,linkcolor=darkblue,citecolor=darkblue,pagecolor=darkblue,raiselinks,plainpages,pdftex]{hyperref}
+
+\def\fig#1{{Fig.~\ref{#1}}}
+\def\tab#1{{Tab.~\ref{#1}}}
+\def\rev#1{{\color{red}#1}}
+
+\newcommand{\D}{\mbox{\scriptsize D}}
+\newcommand{\I}{\mbox{\scriptsize I}}
+\newcommand{\M}{\mbox{\scriptsize M}}
+\newcommand{\Q}{\mbox{\scriptsize P}}
+\newcommand{\IM}{\mbox{\scriptsize IM}}
+\newcommand{\MI}{\mbox{\scriptsize MI}}
+\newcommand{\MP}{\mbox{\scriptsize MP}}
+\newcommand{\cellstate}{cellular state}
+\newcommand{\fixme}[1]{\textsl{\textcolor{Bittersweet}{$\Delta$ #1}}}
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE}
+
+\begin{document}
+
+\title{mitoODE: Dynamical modelling of phenotypes in a genome-wide RNAi live-cell imaging assay}
+\author{Gregoire Pau\\\email{pau.gregoire@gene.com}}
+\maketitle
+
+\tableofcontents
+
+\section{Introduction}
+
+The Mitocheck assay is a genome-wide time-lapse imaging screen that employed
+small-interfering RNAs (siRNAs) to test the implication of human genes in transient biological processes such as cell division or
+migration \cite{mitocheck}. siRNAs are double-stranded RNA molecules,
+implicated in the RNA interference pathway, that are used to disrupt the
+expression of specific genes.
+The screen consisted of 206592 time-lapse experiments, using 51766 different siRNA constructs
+and targeting 17293 human genes. Experiments were organised in slides,
+each containing 384 siRNA spots. Each slide contained 7 to 8 negative and 8 to 11 positive
+control spots. The control siRNAs were: siScrambled, a non-targeting negative control; siKIF11,
+targeting the gene KIF11, which encodes a kinesin needed for centrosome segregation; siCOPB1, targeting an essential
+protein binding to the Golgi vesicle and siINCENP, targeting a
+centromere-associated protein coding gene required for proper chromosome segregation and
+cytokinesis. To allow the chromosomes to be imaged by fluorescence microscopy, a
+cervix carcinoma HeLa cell line stably expressing GFP-tagged H2B
+histone was used. Cells were filmed starting 18~h after seeding for a
+duration of 48~h, with an imaging rate of one per 30~min. After acquisition,
+cell nuclei were segmented, quantified and classified into one of 16
+morphological classes by a fully automated algorithm.
+
+The \code{mitoODE} package implements a population-level dynamic model to
+represent the temporal evolution of dividing cells \cite{mitoODE}. By fitting cell
+counts in four transient cellular states, our model yielded
+parameters that quantify the dynamic effects of siRNA treatments on
+cell population levels. Model parameters allows reliable estimation
+of the penetrance and time of four disruption events of the
+cell cycle: quiescence, mitosis arrest, polynucleation and cell death.
+The package includes the code to fit any time course data to
+the model and the scripts used to generate the figures and results
+presented in the paper.
+
+The \code{mitoODEdata} package, the experimental companion package of
+\code{mitoODE}, contains the screen data and methods to
+access the Mitocheck assay layout, siRNA annotation, time-lapse cell
+counts and the fitted phenotypes for each spot. Four cell types are considered: interphase (referred in the
+Mitocheck paper as: Interphase, Large, Elongated, Folded, Hole,
+SmallIrregular or UndefinedCondensed), mitotic (Metaphase, Anaphase,
+MetaphaseAlignment, Prometaphase or ADCCM), polynucleated (Shape1,
+Shape3, Grape) and apoptotic (Apoptosis).
+
+\section{Methods}
+\subsection{Ordinary differential equation model}
+We consider four cellular states: interphase ($I$), mitotic
+($M$), polynucleated ($P$) and dead ($D$). We modelled the number of
+cells $n_p(t)$ of state $p$, at time $t$ with the system $\mathcal{S}$
+of differential equations, depicted in Fig. 1:
+\begin{eqnarray*}
+  \dot{n}_{\I}(t) & = & -\big({k_{\IM}}(t)+{k_{\D}}(t)\big)n_{\I}(t)+2{k_{\MI}}(t)n_{\M}(t)\\
+  \dot{n}_{\M}(t) & = & {k_{\IM}(t)}n_{\I}(t)-\big({k_{\MI}}(t)+{k_{\D}}(t)+{k_{\MP}}(t)\big)n_{\M}(t)\\
+  \dot{n}_{\Q}(t) & = & {k_{\MP}}(t)n_{\M}(t)-{k_{\D}}(t)n_{\Q}(t)\\
+  \dot{n}_{\D}(t) & = & {k_{\D}}(t)n_{\I}(t)+{k_{\D}}(t)n_{\M}(t)+{k_{\D}}(t)n_{\Q}(t),
+\end{eqnarray*}
+with:
+\begin{eqnarray*}
+k_{\IM}(t) & = & \alpha^0_{\IM} - \alpha_{\IM}/ \big(1 +\exp(\tau_{\IM}-t)\big) \\
+k_{\MI}(t) & = & \alpha^0_{\MI} - \alpha_{\MI}/ \big(1 +\exp(\tau_{\MI}-t)\big) \\
+k_{\MP}(t) & = & \alpha_{\MP}/ \big(1 +\exp(\tau_{\MP}-t)\big) \\
+k_{\D}(t)  & = & \alpha_{\D}/ \big(1 +\exp(\tau_{\D}-t)\big)
+\end{eqnarray*}
+where $\dot{n}_p(t)$ is the time derivative of $n_p(t)$, with the
+initial conditions $n_{\I}(0) = (1-\omega_0)n_0,\ n_{\M}(0) = \omega_0
+n_0,\ n_{\Q}(0) =n_{\D}(0) = 0$, and $n_0$ is the number of cells at
+seeding time $t=0$. In agreement with observations of untreated cells, the mitotic
+index at seeding time is set to $\omega_0=0.05$, the basal
+interphase-to-mitosis transition rate to $\alpha^0_{\IM}=0.025$ h$^{-1}$
+and the basal mitosis-to-interphase transition rate
+$\alpha^0_{\MI}=0.57$ h$^{-1}$.
+To account for contamination of spots by normal cells, due to
+untransfected cells moving into the spot region, we assumed
+that cell counts are a mixture of two independent, growing cell populations: a treated population, modelled by
+$\mathcal{S}$ with parameters $\{(1-\mu){n_0},\ \alpha_{\IM},\ \alpha_{\MI},\ \alpha_{\MP},\ \alpha_{\D},\ \tau_{\IM},\ \tau_{\MI},\ \tau_{\MP},\ \tau_{\D}\}$
+and an untreated population, modelled by $\mathcal{S}$ with parameters $\{\mu{n_0},\ 0,\ 0,\ 0,\ 0,\ 0,\ 0,\ 0,\ 0\}$.
+In total, 10 parameters are required to model a cell count time course: the initial cell number at seeding time $n_0$, the normal contamination
+fraction parameter $\mu$ and 8 transition parameters
+$\{\alpha_{\IM},\ \alpha_{\MI},\ \alpha_{\MP},\ \alpha_{\D},\ \tau_{\IM},\ \tau_{\MI},\ \tau_{\MP},\ \tau_{\D}\}$.
+
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[width=3in]{model.pdf}
+\caption{A differential equation model to quantify temporal
+phenotypes. Cell populations could enter and leave states with four
+different transition rates: $k_{\IM}$, $k_{\MI}$, $k_{\MP}$ and
+$k_{\D}$.}
+\end{center}
+\end{figure}
+
+\subsection{Estimation of model parameters}
+Model parameters $\theta=\{n_0,\ \mu,\ \alpha_{\IM},\ \alpha_{\MI},\ \alpha_{\MP},\ \alpha_{\D},\ \tau_{\IM},\ \tau_{\MI},\ \tau_{\MP},\ \tau_{\D}\}$
+are estimated by penalised least squares regression of time-course cell count data, minimising the cost function:
+\begin{equation}\label{eq:costfun}
+J(\theta) = \frac{1}{\#\mathcal{T}}\sum_{t\in\mathcal{T}}\sum_{p\in\mathcal{P}}\big(y_p(t)-n_p(t, \theta)\big)^2 + \lambda\sum_{k\in\mathcal{K}}\alpha_k^2,
+\end{equation}
+where $\mathcal{T}$ is the set of observed time points, $y_p(t)$ the
+observed number of cells of state $p$ at time $t$, $\lambda$ a constant
+to weigh the penalty term and the set of penalised parameters
+$\mathcal{K}=\{\mu,\ \alpha_{\IM},\ \alpha_{\MI},\ \alpha_{\MP},\
+\alpha_{\D}\}$.  Given the parameters, the ODE system is integrated
+using the Runge-Kutta fourth-order method.  Minimisation of the
+penalised criterion $J$ was achieved with the Levenberg-Marquardt
+algorithm, with the \code{nls.lm} pacakge, applying a positivity constraint to the components of
+$\theta$. 
+
+\section{Modelling time course cell count data}
+
+<<echo=false>>=
+options(width=80)
+@
+
+The \code{mitoODE} package depends on the \code{mitoODEdata}
+experiment data package, containing 206592 time-course cell counts from the Mitocheck time-lapse
+genome wide siRNA screen. The following example plots the time-course cell counts
+of a given spot and loads them in the matrix \code{y}. The matrix contains the number of
+cells of a given type (interphase \code{i}, mitotic \code{m}, polynucleated \code{s} and
+apoptotic \code{a}) per image. The first image was acquired 18 h after
+siRNA transfection and the following images were acquired every 30
+minutes during 48 h.
+
+<<plotspot, fig=TRUE, include=FALSE>>=
+library("mitoODE")
+spotid <- 1000
+plotspot(spotid)
+y <- readspot(spotid)
+y[1:5,]
+@
+
+To fit the time-course cell counts, we first need to set the constant parameters
+of the model. This is a named vector with the elements: \code{g.kim} (in our
+model, $\alpha^0_{\IM}=0.025$ h$^{-1}$), \code{g.kmi} ($\alpha^0_{\MI}=0.57$ h$^{-1}$),
+\code{g.mit0} (the mitotic index at seeding time, $\omega_0=0.05$),
+and \code{p.lambda} (the regularization parameter,  $\lambda=4$).
+
+<<pconst>>=
+pconst <- c(g.kim=0.025, g.kmi=0.57, g.mit0=0.05, p.lambda=4)
+@
+
+The function \code{getp0} generates an initial condition vector of 10 
+parameters: him (in our model, $\alpha_{\IM}$), hmi ($\alpha_{\MI}$), 
+hmp ($\alpha_{\MP}$), ha ($\alpha_{\D}$), tim ($\tau_{\IM}$), tmi
+($\tau_{\MI}$), tmp ($\tau_{\MP}$), ta ($\tau_{\D}$), mu
+($\mu$) and i0 ($n_0$). 
+ 
+<<<p0>>=
+p0 <- getp0()
+p0
+@ 
+
+The function \code{fitmodel} fits the time-course cell counts to the
+model, using the initial condition parameters \code{p0} and the constant
+parameters \code{pconst}. Results are the fitted parameters and some
+fitting statistics, including: \code{score} (the cost function $J$), \code{rss}
+(the residual sum of squares) and \code{pen} (the penalty term).
+
+<<<p0>>=
+pp1 <- fitmodel(y, p0, pconst)
+round(pp1, 2)
+@ 
+
+The function \code{plotfit} displays the fitted data.
+<<plotfit, fig=TRUE, include=false>>=
+plotfit(spotid, pp1)
+@
+
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[width=3.2in]{mitoODE-introduction-plotspot.pdf}
+\includegraphics[width=3.2in]{mitoODE-introduction-plotfit.pdf}
+\caption{Time course cell counts (left) and fitted data (dotted lines,
+right) of the Mitocheck spot ID 1000.} 
+\end{center}
+\end{figure}
+
+The model is sensitive to initial conditions. To decrease the risk of
+finding local minima, the data be fitted several times using the argument
+\code{nfits}, adding to the initial conditions some Gaussian noise of standard devision \code{sd}. 
+The following example uses 4 fits to find a better fit (i.e. with a lower \code{score}) than \code{pp1}.
+
+<<<fitmodel4>>=
+set.seed(1)
+pp2 <- fitmodel(y, p0, pconst, nfits=4, sd=0.1)
+round(pp2, 2)
+@ 
+
+\section{Reproducing figures}
+
+The following functions reproduce the plots shown in the paper
+\cite{mitoODE}. See the paper for details.
+
+<<plotfigures>>=
+loadFittedData()
+figure1()
+figure2()
+figure3a()
+figure3b()
+figure4()
+@ 
+
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[width=3.2in]{raws1.pdf}
+\includegraphics[width=3.2in]{raws2.pdf}\\
+\includegraphics[width=3.2in]{rawk1.pdf}
+\includegraphics[width=3.2in]{rawc1.pdf}
+\caption{Time course of cell counts in four different siRNA spots. The
+  negative control siRNA siScrambled led to normal cell growth in two
+  replicated spots {\bf(top)}. siKIF11 led to an early accumulation of mitotic cells, while
+  at later times many of the arrested cells went into cell death
+  {\bf(bottom-left)}. siCOPB1, which targets an essential Golgi-binding
+  protein, caused cell death, but no mitotic phenotypes
+  {\bf(bottom-right)}. Y-axis scales were changed to accommodate the
+  different dynamics of the phenotypes.}
+\end{center}
+\end{figure}
+
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[width=3.2in]{pk1s1.pdf}
+\includegraphics[width=3.2in]{pk1c1.pdf}\\
+\includegraphics[width=3.2in]{pk2s1.pdf}
+\includegraphics[width=3.2in]{pk2c1.pdf}\\
+\includegraphics[width=3.2in]{fits1.pdf}
+\includegraphics[width=3.2in]{fitc1.pdf}\\
+\caption{Transition rates vary over time and are modelled by
+parametric sigmoid functions. In the negative control spot {\bf(left)}, the
+interphase-to-mitosis transition rate $k_{\IM}$ inflects at
+$\tau_{\IM}=54.5$~h, as the capacity of the spot to support a growing
+number of cells becomes limiting. The death transition
+rate $k_{\D}$ remains constant and null. In the siCOPB1 spot {\bf(right)}, the
+death transition rate $k_{\D}$ inflects at $\tau_{\D}=29.4$~h, indicating
+the time of cell death.}
+\end{center}
+\end{figure}
+
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[width=3.2in]{boxplotmitod.pdf}\\
+\includegraphics[width=3.2in]{expmitod1.pdf}
+\includegraphics[width=3.2in]{expmitod2.pdf}
+\caption{Box plots of cell death penetrance $\alpha_{\D}$  estimated
+  in control and sample wells {\bf(top)}.
+Lethal phenotypes induced by siKIF11 and siCOPB1 had significantly higher cell death penetrance
+than the negative siScrambled control spots.
+Cell count time courses of two spots containing an siRNA (MCO\_0026491) targeting
+the uncharacterised gene C3orf26 {\bf(bottom)}. Induction of cell death started at $\tau_{\D}=$ 30.8~h and 33.8~h.}
+\end{center}
+\end{figure}
+
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[width=3.2in]{boxplotha.pdf}\\
+\includegraphics[width=3.2in]{expta1.pdf}
+\includegraphics[width=3.2in]{expta2.pdf}
+\caption{ Box plot of mitosis duration estimated in control and sample
+  wells {\bf(top)}. Prometaphase arrest caused by siKIF11
+led to a significantly higher mitosis duration than cells in negative control spots.
+ Cell count time courses of two spots containing an siRNA
+(MCO\_0020444) targeting the poorly characterised gene CCDC9 {\bf(bottom)}. The overall
+high proportion of mitotic cells, compared to the negative controls
+illustrated in Fig.~1b, is indicative of a longer mitosis duration,
+estimated at 5.7~h.}
+\end{center}
+\end{figure}
+
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[width=6.8in]{fig4.pdf}
+\caption{Phenotypic map of the Mitocheck screen. 
+  Phenotypic profiles of all siRNA treatments were derived from fitted parameters
+  and projected on two dimensions using linear discriminant analysis between the
+  siScrambled, siCOPB1 and siKIF11 control spots. Color contour lines
+  denote the quantiles of control experiments that fall into the
+  corresponding phenotypic region. The green phenotypic region,
+  centered on the non-targeting negative control siScrambled, is 
+  representative of a normal growth phenotype. The orange phenotypic
+  region, centered on siKIF11, is representative of prometaphase
+  arrest followed by apoptosis, while the blue region, centered on
+  siCOPB1, is representative of cell death without mitotic
+  arrest. Shown are the 2190 siRNAs that induced a disruption of the cell
+  cycle, or increased the duration of the interphase or mitosis phases.
+  A selection of siRNA gene targets are highlighted on the map.}
+\end{center}
+\end{figure}
+
+\section{References}
+\begin{thebibliography}{9}
+  
+\bibitem{mitoODE}
+Pau G, Walter T, Neumann B,  Heriche JK, Ellenberg J, and Huber W (2013)
+{{D}ynamical modelling of phenotypes in a genome-wide RNAi
+  live-cell imaging assay}.
+\newblock (submitted)
+  
+\bibitem{mitocheck}
+Neumann B, Walter T, Heriche JK, Bulkescher J, Erfle H, et~al. (2010)
+  {{P}henotypic profiling of the human genome by time-lapse microscopy reveals
+  cell division genes}.
+\newblock Nature 464: 721--727.
+
+\end{thebibliography}
+
+\end{document}
+
+
