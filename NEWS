@@ -1,2 +1,5 @@
+version 0.99.5:
+- changed mc.cores=12 by mc.cores=detectCores()
+
 version 0.99.2:
 - initial submission

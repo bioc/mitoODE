@@ -47,8 +47,9 @@ compute.mtvt <- function(parameter, z, tab2, max.mean=50, max.sd=4) {
   }
   
   ssirna <- split(which(z), tab$sirna[z])
-  mt <- unlist(mclapply(ssirna, function(z) mean((pheno[z, parameter])), mc.cores=12))
-  st <- unlist(mclapply(ssirna, function(z) if (length(z)<=1) NA else sd((pheno[z, parameter])), mc.cores=12))
+  mc.cores <- detectCores()
+  mt <- unlist(mclapply(ssirna, function(z) mean((pheno[z, parameter])), mc.cores=mc.cores))
+  st <- unlist(mclapply(ssirna, function(z) if (length(z)<=1) NA else sd((pheno[z, parameter])), mc.cores=mc.cores))
   w <- names(which(mt<max.mean & st<max.sd))
   res <- setNames(rep(NA, nrow(tab2)), rownames(tab2))
   res[w] <- mt[w]
@@ -66,6 +67,7 @@ buildSuppTab <- function() {
   usirna <- sort(unique(tab$sirna))
   tab2 <- data.frame(target.hgnc=getanno(sirna=usirna), stringsAsFactors=FALSE)
   rownames(tab2) <- usirna
+  mc.cores <- detectCores()
   
   ## time.quiescence
   z <- zqc & tab$type=="experiment" & pheno[,"him"]<(-0.025) & pheno[,"mu"]<0.5
@@ -86,8 +88,8 @@ buildSuppTab <- function() {
   ## duration.mitosis
   z <- zqc & tab$type=="experiment" & pheno[, "tmi"] < 50  & pheno[,"mu"]<0.5
   ssirna <- split(which(z), tab$sirna[z])
-  md <- unlist(mclapply(ssirna, function(z) 2^mean(log2(pheno[z, "mitod"])), mc.cores=12))
-  vd <- unlist(mclapply(ssirna, function(z) if (length(z)<=1) NA else 2^sd(log2(pheno[z, "mitod"])), mc.cores=12))
+  md <- unlist(mclapply(ssirna, function(z) 2^mean(log2(pheno[z, "mitod"])), mc.cores=mc.cores))
+  vd <- unlist(mclapply(ssirna, function(z) if (length(z)<=1) NA else 2^sd(log2(pheno[z, "mitod"])), mc.cores=mc.cores))
   sd <- names(which(md>2 & vd<2))
   tab2$duration.mitosis <- NA
   tab2[sd, "duration.mitosis"] <- md[sd]
@@ -95,8 +97,8 @@ buildSuppTab <- function() {
   ## duration.interphase
   z <- zqc & tab$type=="experiment" & pheno[, "tim"] < 50  & pheno[,"mu"]<0.5
   ssirna <- split(which(z), tab$sirna[z])
-  md <- unlist(mclapply(ssirna, function(z) 2^mean(log2(pheno[z, "interd"])), mc.cores=12))
-  vd <- unlist(mclapply(ssirna, function(z) if (length(z)<=1) NA else 2^sd(log2(pheno[z, "interd"])), mc.cores=12))
+  md <- unlist(mclapply(ssirna, function(z) 2^mean(log2(pheno[z, "interd"])), mc.cores=mc.cores))
+  vd <- unlist(mclapply(ssirna, function(z) if (length(z)<=1) NA else 2^sd(log2(pheno[z, "interd"])), mc.cores=mc.cores))
   sd <- names(which(md>40 & vd<4))
   tab2$duration.interphase <- NA
   tab2[sd, "duration.interphase"] <- md[sd]
@@ -163,7 +165,8 @@ stats.fitting <- function() {
   }
   
   ## mre
-  mres <- parallel::mclapply(sample(1:nrow(pheno), 5000), mc.cores=12, function(id) {
+  mc.cores <- detectCores()
+  mres <- parallel::mclapply(sample(1:nrow(pheno), 5000), mc.cores=mc.cores, function(id) {
     y <-  readspot(id)
     yf <- odevaluate(pheno[id,], nt=nrow(y))
     mre <- abs(y-yf$y)/max(y)
@@ -172,7 +175,7 @@ stats.fitting <- function() {
   quantile(unlist(mres), 0.95) ## 95 % of the spots have a MRE lower than 3.2 %
 
   ## r2
-  r2s <- parallel::mclapply(sample(1:nrow(pheno), 5000), mc.cores=12, function(id) {
+  r2s <- parallel::mclapply(sample(1:nrow(pheno), 5000), mc.cores=mc.cores, function(id) {
     y <-  readspot(id)
     yf <- odevaluate(pheno[id,], nt=nrow(y))
     sstot <- mean((y-mean(y))^2)
@@ -365,7 +368,8 @@ figure4 <- function() {
   ## replicated experiments
   z <- zqc
   ssirna <- split(which(z), tab$sirna[z])
-  xr <- mclapply(ssirna, mc.cores=12, function(w) if (length(w)>1) apply(dat[w,], 2, median) else NULL)
+  mc.cores <- detectCores()
+  xr <- mclapply(ssirna, mc.cores=mc.cores, function(w) if (length(w)>1) apply(dat[w,], 2, median) else NULL)
   xr <- do.call(rbind, xr)
   lxr <- predict(ldao, xr)
   
