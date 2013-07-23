@@ -1,5 +1,5 @@
 Package: mitoODE
-Version: 0.99.5
+Version: 0.99.6
 Date: 9 Dec 2012
 Title: Implementation of the differential equation model described in "Dynamical modelling of phenotypes in a genome-wide RNAi live-cell
                 imaging assay" (submitted).

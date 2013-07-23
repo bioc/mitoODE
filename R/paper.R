@@ -47,7 +47,7 @@ compute.mtvt <- function(parameter, z, tab2, max.mean=50, max.sd=4) {
   }
   
   ssirna <- split(which(z), tab$sirna[z])
-  mc.cores <- detectCores()
+  mc.cores <- 1
   mt <- unlist(mclapply(ssirna, function(z) mean((pheno[z, parameter])), mc.cores=mc.cores))
   st <- unlist(mclapply(ssirna, function(z) if (length(z)<=1) NA else sd((pheno[z, parameter])), mc.cores=mc.cores))
   w <- names(which(mt<max.mean & st<max.sd))
@@ -67,7 +67,7 @@ buildSuppTab <- function() {
   usirna <- sort(unique(tab$sirna))
   tab2 <- data.frame(target.hgnc=getanno(sirna=usirna), stringsAsFactors=FALSE)
   rownames(tab2) <- usirna
-  mc.cores <- detectCores()
+  mc.cores <- 1
   
   ## time.quiescence
   z <- zqc & tab$type=="experiment" & pheno[,"him"]<(-0.025) & pheno[,"mu"]<0.5
@@ -165,7 +165,7 @@ stats.fitting <- function() {
   }
   
   ## mre
-  mc.cores <- detectCores()
+  mc.cores <- 1
   mres <- parallel::mclapply(sample(1:nrow(pheno), 5000), mc.cores=mc.cores, function(id) {
     y <-  readspot(id)
     yf <- odevaluate(pheno[id,], nt=nrow(y))
@@ -368,7 +368,7 @@ figure4 <- function() {
   ## replicated experiments
   z <- zqc
   ssirna <- split(which(z), tab$sirna[z])
-  mc.cores <- detectCores()
+  mc.cores <- 1
   xr <- mclapply(ssirna, mc.cores=mc.cores, function(w) if (length(w)>1) apply(dat[w,], 2, median) else NULL)
   xr <- do.call(rbind, xr)
   lxr <- predict(ldao, xr)

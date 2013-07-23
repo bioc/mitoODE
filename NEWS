@@ -1,3 +1,6 @@
+version 0.99.6:
+- changed mc.cores to 1 to avoid Windows building error
+
 version 0.99.5:
 - changed mc.cores=12 by mc.cores=detectCores()
 
