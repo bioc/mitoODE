@@ -1,0 +1,11 @@
+citEntry(entry="article",
+         title = "Dynamical modelling of phenotypes in a genome-wide RNAi live-cell imaging assay",
+         author = do.call(personList, lapply(c("Gregoire Pau", "Thomas Walter", "Beate Neumann", "Jean-Karim Heriche", "Jan Ellenberg", "Wolfgang Huber"), as.person)), 
+         year = 2013,
+         journal = "BMC Bioinformatics",
+         volume = "14",
+         pages = "308",
+         doi = "doi:10.1186/1471-2105-14-308",
+         url = "http://www.biomedcentral.com/1471-2105/14/308",
+         textVersion = "'Dynamical modelling of phenotypes in a genome-wide RNAi live-cell imaging assay' by Pau, G., Walter, T., Neumann, B., Heriche, J.-K., Ellenberg, J., & Huber, W., BMC Bioinformatics (2013), 14(1), 308. doi:10.1186/1471-2105-14-308")
+

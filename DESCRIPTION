@@ -1,13 +1,12 @@
 Package: mitoODE
-Version: 1.1.1
-Date: 9 Dec 2012
+Version: 1.1.2
 Title: Implementation of the differential equation model described in "Dynamical modelling of phenotypes in a genome-wide RNAi live-cell
                 imaging assay" (submitted).
 Author: Gregoire Pau
 Maintainer: Gregoire Pau <pau.gregoire@gene.com>
 SystemRequirements: <not required>
 Depends: R (>= 2.14.0), minpack.lm, MASS, parallel, mitoODEdata, KernSmooth
-Description: The package contains the methods to fit a cell-cycle model on cell count data and the code to reproduce the results shown in the paper "Dynamical modelling of phenotypes in a genome-wide RNAi live-cell imaging assay" (submitted).
+Description: The package contains the methods to fit a cell-cycle model on cell count data and the code to reproduce the results shown in our paper paper “Dynamical modelling of phenotypes in a genome-wide RNAi live-cell imaging assay” by Pau, G., Walter, T., Neumann, B., Heriche, J.-K., Ellenberg, J., & Huber, W., BMC Bioinformatics (2013), 14(1), 308. doi:10.1186/1471-2105-14-308
 License: LGPL
 LazyLoad: yes
 biocViews: ExperimentData, TimeCourse, CellBasedAssays, Preprocessing
