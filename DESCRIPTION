@@ -1,5 +1,5 @@
 Package: mitoODE
-Version: 1.25.0
+Version: 1.25.1
 Title: Implementation of the differential equation model described in "Dynamical modelling of phenotypes in a genome-wide RNAi live-cell imaging assay"
 Author: Gregoire Pau
 Maintainer: Gregoire Pau <pau.gregoire@gene.com>
@@ -9,3 +9,4 @@ Description: The package contains the methods to fit a cell-cycle model on cell 
 License: LGPL
 LazyLoad: yes
 biocViews: ImmunoOncology, ExperimentData, TimeCourse, CellBasedAssays, Preprocessing
+PackageStatus: Deprecated
