@@ -1,5 +1,5 @@
 Package: mitoODE
-Version: 1.27.1
+Version: 1.26.1
 Title: Implementation of the differential equation model described in "Dynamical modelling of phenotypes in a genome-wide RNAi live-cell imaging assay"
 Author: Gregoire Pau
 Maintainer: Gregoire Pau <pau.gregoire@gene.com>
