@@ -20,7 +20,8 @@ loadFittedData <- function() {
   assign("p.lambda", 4, 1)
   
   ## load assay fitted phenotypes and compute interphase and mitosis duration
-  mitoODEdata:::loadPheno()
+  ## mitoODEdata:::loadPheno()
+  pheno <- get(load(system.file('data/pheno.rda', package = "mitoODEdata")))
   pheno <- cbind(pheno, mitod=0.6/(abs(g.kmi + pheno[,"hmi"] + pheno[,"hmp"] +  pheno[,"ha"])+0.02))
   pheno <- cbind(pheno, interd=1/(abs(g.kim + pheno[,"him"] + pheno[,"ha"])+0.02))
   assign("pheno", pheno, 1)

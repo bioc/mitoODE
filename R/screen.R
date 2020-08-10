@@ -13,7 +13,7 @@ plotfit <- function(spot, p=pheno[spot,], showfit=TRUE, legend="topleft", kk=NUL
   }
   
   y <- try(readspot(spot), silent=TRUE)
-  if (class(y)=='try-error') cat('warning: cannot read spot=', spot, '\n')
+  if (is(y, 'try-error')) cat('warning: cannot read spot=', spot, '\n')
   else {
     nt <- nrow(y)
     fs <- compute.fitstat(y, p)
